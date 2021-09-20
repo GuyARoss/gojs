@@ -16,15 +16,24 @@ func (b *DOMBuilder) Build() string {
 					const handleIncomingRequest = ({ name, data }) => {
 						switch (name) {
 							case "register_event": {
+								const { id, eventName } = data
 
+								// adds an event listener to the a dom element
+								document.getElementById(id).addEventListener(eventName, () => {
+									// @@todo: create a copy of the dom & pass it into the emit event.
+									console.log(eventName, id)
+								})
 							}
 							case "set_element": {
-								
+								const { elementID, content } = data
+
+								// sets the inner html of an element
+								const element = document.getElementById(elementID)
+								element.innerHTML = content
 							}
 							case "render_dom": {
-								
+								document.body.innerHTML = data
 							}
-							
 						}
 					}
 

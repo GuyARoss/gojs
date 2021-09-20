@@ -2,6 +2,7 @@ package gojs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -13,15 +14,26 @@ type DevServer struct {
 }
 
 func (s *DevServer) RegisterEvent(id string, eventName string) {
+	m := make(map[string]string)
+	m["id"] = id
+	m["eventName"] = eventName
 
+	f, _ := json.Marshal(m)
+	s.wsServer.Emit("register_event", f)
 }
 
 func (s *DevServer) SetElement(elementID string, data string) {
+	m := make(map[string]string)
+	m["elementID"] = elementID
+	m["content"] = data
 
+	f, _ := json.Marshal(m)
+
+	s.wsServer.Emit("render_dom", f)
 }
 
 func (s *DevServer) RenderDOM(body string) {
-
+	s.wsServer.Emit("render_dom", []byte(body))
 }
 
 func (s *DevServer) RegisterEventBridge() *UIUpdate {
@@ -43,6 +55,5 @@ func NewDevServer() UIClient {
 	}()
 
 	return &DevServer{
-		wsServer: wsServer,
-	}
+		wsServer: wsServer}
 }
