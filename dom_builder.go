@@ -41,8 +41,7 @@ func (b *DOMBuilder) Build() string {
 						const incoming = JSON.parse(e.data)
 			
 						if (!!incoming.data) {
-							const incomingJSON = JSON.parse(incoming.data)
-							handleIncomingRequest(incomingJSON)
+							handleIncomingRequest(incoming)
 						}
 					})
 				</script>

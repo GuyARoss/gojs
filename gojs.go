@@ -25,6 +25,7 @@ type UIClient interface {
 	SetElement(elementID string, data string)
 	RenderDOM(body string)
 	RegisterEventBridge() *UIUpdate
+	Setup()
 }
 
 type StaticDOMElement interface {
@@ -47,6 +48,7 @@ type UI struct {
 }
 
 func (ui *UI) Show() {
+	ui.Client.Setup()
 	pathContent, err := ioutil.ReadFile(ui.Config.HTMLDocPath)
 	if err != nil {
 		panic("invalid doc path")

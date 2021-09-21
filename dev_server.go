@@ -11,6 +11,9 @@ import (
 
 type DevServer struct {
 	wsServer *websocket.Server
+	started  bool
+
+	operations *[]func(c *websocket.Conn)
 }
 
 func (s *DevServer) RegisterEvent(id string, eventName string) {
@@ -29,31 +32,59 @@ func (s *DevServer) SetElement(elementID string, data string) {
 
 	f, _ := json.Marshal(m)
 
-	s.wsServer.Emit("render_dom", f)
+	if s.started {
+		s.wsServer.Emit("set_element", f)
+		return
+	}
+
+	ops := append(*s.operations, func(c *websocket.Conn) {
+		s.wsServer.Emit("set_element", f)
+	})
+
+	s.operations = &ops
+}
+func (s *DevServer) Setup() {
+	s.wsServer.OnConnect(func(c *websocket.Conn) {
+		fmt.Println(len(*s.operations))
+		for _, op := range *s.operations {
+			op(c)
+		}
+	})
 }
 
 func (s *DevServer) RenderDOM(body string) {
-	s.wsServer.Emit("render_dom", []byte(body))
+	// @@todo(guy): can this be used after the server is started?
+	ops := append(*s.operations, func(c *websocket.Conn) {
+		c.Emit("render_dom", body)
+	})
+
+	s.operations = &ops
 }
 
 func (s *DevServer) RegisterEventBridge() *UIUpdate {
 	return &UIUpdate{}
 }
 
-func NewDevServer() UIClient {
+func NewDevServer(serverPort int) UIClient {
 	wsServer := websocket.Start(context.Background())
+	ops := make([]func(c *websocket.Conn), 0)
+
+	http.HandleFunc("/ws", wsServer.Handler)
 
 	go func() {
-		http.HandleFunc("/ws", wsServer.Handler)
 		http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-			dom := &DOMBuilder{}
+			dom := &DOMBuilder{
+				SocketURI: fmt.Sprintf("ws://localhost:%d/ws", serverPort),
+			}
 			rw.Write([]byte(dom.Build()))
 			rw.WriteHeader(http.StatusOK)
 		})
 
-		http.ListenAndServe(fmt.Sprintf(":%d", 3000), nil)
+		http.ListenAndServe(fmt.Sprintf(":%d", serverPort), nil)
 	}()
 
 	return &DevServer{
-		wsServer: wsServer}
+		wsServer:   wsServer,
+		operations: &ops,
+	}
 }
