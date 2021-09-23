@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gobwas/ws"
 	"github.com/pkgz/websocket"
 )
 
@@ -23,7 +22,19 @@ func (s *DevServer) RegisterEvent(id string, eventName string) {
 	m["eventName"] = eventName
 
 	f, _ := json.Marshal(m)
-	s.wsServer.Emit("register_event", f)
+
+	if s.started {
+		s.wsServer.Emit("register_event", f)
+		fmt.Println("made it here55?")
+		return
+	}
+
+	ops := append(*s.operations, func(c *websocket.Conn) {
+		fmt.Println("made it here?")
+		s.wsServer.Emit("register_event", f)
+	})
+
+	s.operations = &ops
 }
 
 func (s *DevServer) SetElement(elementID string, data string) {
@@ -54,7 +65,11 @@ func (s *DevServer) Setup() {
 }
 
 func (s *DevServer) RenderDOM(body string) {
-	// @@todo(guy): can this be used after the server is started?
+	if s.started {
+		s.wsServer.Emit("render_dom", []byte(body))
+		return
+	}
+
 	ops := append(*s.operations, func(c *websocket.Conn) {
 		c.Emit("render_dom", body)
 	})
@@ -65,8 +80,13 @@ func (s *DevServer) RenderDOM(body string) {
 func (s *DevServer) RegisterEventBridge() *UIUpdate {
 	elChan := make(chan EventListenerEvent)
 
-	s.wsServer.OnMessage(func(c *websocket.Conn, h ws.Header, b []byte) {
-		fmt.Println("received", string(b))
+	s.wsServer.On("event", func(c *websocket.Conn, msg *websocket.Message) {
+		if msg.Name == "event" {
+			e := &EventListenerEvent{}
+			json.Unmarshal(msg.Data, e)
+
+			elChan <- *e
+		}
 	})
 
 	return &UIUpdate{

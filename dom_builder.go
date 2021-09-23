@@ -13,7 +13,7 @@ func (b *DOMBuilder) Build() string {
 				<script>
 					const socket = new WebSocket("%s")
 
-					const staticDoc = () => {
+					function createStaticDoc() {
 						const uiElements = document.getElementsByClassName("ui")
 						const uiDoc = {}
 
@@ -32,23 +32,37 @@ func (b *DOMBuilder) Build() string {
 					const handleIncomingRequest = ({ name, data }) => {
 						switch (name) {
 							case "register_event": {
-								const { id, eventName } = data
+								const { id, eventName } = JSON.parse(data)
 
-								// adds an event listener to the a dom element
 								document.getElementById(id).addEventListener(eventName, () => {
-									const staticDoc = staticDoc()
-									console.log(eventName, id)
+									const staticDoc = createStaticDoc()
+									
+									socket.send(JSON.stringify({
+										name: "event",
+										data: {
+											document: {
+												contentMap: staticDoc,
+											},
+											eventName: eventName,
+											elementID: id,
+										},
+									}))
 								})
+								break;
 							}
 							case "set_element": {
-								const { elementID, content } = data
+								const { elementID, content } = JSON.parse(data)
 
 								// sets the inner html of an element
 								const element = document.getElementById(elementID)
 								element.innerHTML = content
+								break;
+
 							}
 							case "render_dom": {
 								document.body.innerHTML = data
+								break;
+
 							}
 						}
 					}

@@ -7,13 +7,13 @@ import (
 type StaticDocument struct {
 	// ContentMap where the key is the ID of the element
 	// and the value is the content within the Element
-	ContentMap map[string]string
+	ContentMap map[string]string `json:"contentMap"`
 }
 
 type EventListenerEvent struct {
-	ElementID string
-	EventName string
-	Document  *StaticDocument
+	ElementID string          `json:"elementID"`
+	EventName string          `json:"eventName"`
+	Document  *StaticDocument `json:"document"`
 }
 
 type UIUpdate struct {
@@ -45,6 +45,14 @@ type UI struct {
 
 	Client UIClient
 	Config *UIConfig
+}
+
+func New(client UIClient, config *UIConfig) *UI {
+	return &UI{
+		events: make(map[string]map[string]EventHandler),
+		Client: client,
+		Config: config,
+	}
 }
 
 func (ui *UI) Show() {
