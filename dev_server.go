@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gobwas/ws"
 	"github.com/pkgz/websocket"
 )
 
@@ -62,7 +63,15 @@ func (s *DevServer) RenderDOM(body string) {
 }
 
 func (s *DevServer) RegisterEventBridge() *UIUpdate {
-	return &UIUpdate{}
+	elChan := make(chan EventListenerEvent)
+
+	s.wsServer.OnMessage(func(c *websocket.Conn, h ws.Header, b []byte) {
+		fmt.Println("received", string(b))
+	})
+
+	return &UIUpdate{
+		EventListenerSignal: elChan,
+	}
 }
 
 func NewDevServer(serverPort int) UIClient {

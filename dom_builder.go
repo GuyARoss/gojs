@@ -13,6 +13,22 @@ func (b *DOMBuilder) Build() string {
 				<script>
 					const socket = new WebSocket("%s")
 
+					const staticDoc = () => {
+						const uiElements = document.getElementsByClassName("ui")
+						const uiDoc = {}
+
+						for (let i = 0; i < uiElements.length; i++) {
+							const uiElement = uiElements.item(i)
+							const uiElementID = uiElement.id
+
+							if (!!uiElementID) {
+								uiDoc[uiElementID] = uiElement.innerText
+							}
+						}
+						
+						return uiDoc
+					}
+
 					const handleIncomingRequest = ({ name, data }) => {
 						switch (name) {
 							case "register_event": {
@@ -20,7 +36,7 @@ func (b *DOMBuilder) Build() string {
 
 								// adds an event listener to the a dom element
 								document.getElementById(id).addEventListener(eventName, () => {
-									// @@todo: create a copy of the dom & pass it into the emit event.
+									const staticDoc = staticDoc()
 									console.log(eventName, id)
 								})
 							}

@@ -52,7 +52,7 @@ func (c *IPCClient) blockingListener(handler func(incoming *IncomingData)) {
 	}
 }
 
-func (c *IPCClient) Listen() (*Listener, error) {
+func (c *IPCClient) Listen() (*IPCListener, error) {
 	incomingChan := make(chan IncomingData)
 
 	handleIncomingChan := func(data *IncomingData) {
@@ -63,7 +63,7 @@ func (c *IPCClient) Listen() (*Listener, error) {
 		c.blockingListener(handleIncomingChan)
 	}()
 
-	return &Listener{
+	return &IPCListener{
 		IncomingData: incomingChan,
 	}, nil
 }
