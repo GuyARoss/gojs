@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"syscall"
 )
@@ -26,10 +27,21 @@ type IPCListener struct {
 func parseIncomingBytes(data []byte) *IncomingData {
 	f := strings.SplitN(string(data), ":", 2)
 
+	if len(f) != 2 {
+		return nil
+	}
+
 	return &IncomingData{
 		OpName: f[0],
 		Data:   f[1],
 	}
+}
+
+func normalizeDataOut(out string) string {
+	singleSpacePattern := regexp.MustCompile(`\s+`)
+	clean := singleSpacePattern.ReplaceAllString(out, " ")
+
+	return clean
 }
 
 var ErrNoClient = errors.New("client is nil")
@@ -45,7 +57,7 @@ func (c *IPCClient) Write(operationName string, data string) error {
 	}
 
 	// note to future dev, DO NOT remove the \n.. this caused hours of headache..
-	f.WriteString(fmt.Sprintf("%s:%s\n", operationName, data))
+	f.WriteString(fmt.Sprintf("%s:%s\n", operationName, normalizeDataOut(data)))
 
 	return nil
 }
@@ -73,7 +85,9 @@ func (c *IPCClient) Listen() (*IPCListener, error) {
 
 	go func(ic chan IncomingData) {
 		c.blockingListener(func(data *IncomingData) {
-			ic <- *data
+			if data != nil {
+				ic <- *data
+			}
 		})
 	}(incomingChan)
 

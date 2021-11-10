@@ -116,3 +116,26 @@ func TestIPC_SeparateInstancesSamePipe(t *testing.T) {
 	ipc1.Dispose()
 	ipc2.Dispose()
 }
+
+func TestNormalizeDataOut(t *testing.T) {
+	nOut := normalizeDataOut(`
+	<html>
+    <manifest>
+
+    </manifest>
+    <style>
+        .center {
+            text-align: center;
+        }
+    </style>
+    <body>        
+        <div class="center">
+            <h1 class="ui"> Settings </h1>  
+        </div>
+    </body>
+</html>
+`)
+	if nOut != ` <html> <manifest> </manifest> <style> .center { text-align: center; } </style> <body> <div class="center"> <h1 class="ui"> Settings </h1> </div> </body> </html> ` {
+		t.Errorf("normalization response not expected")
+	}
+}
