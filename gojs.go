@@ -68,6 +68,20 @@ func (ui *UI) Show() {
 		panic("invalid doc path")
 	}
 
+	bridge := ui.Client.RegisterEventBridge()
+	terminationErrChan := make(chan error)
+
+	go func() {
+		for {
+			select {
+			case s := <-bridge.EventListenerSignal:
+				go ui.events[s.ElementID][s.EventName](s.Document)
+			case err := <-bridge.EventErrorSignal:
+				terminationErrChan <- err
+			}
+		}
+	}()
+
 	// ensure that the connection exists before we do stuff.
 	connectionEstablished := make(chan bool)
 	go func() {
@@ -80,25 +94,11 @@ func (ui *UI) Show() {
 		}
 	}()
 
+	// we wait for the connection to be established before attempting to render anything.
 	<-connectionEstablished
 
 	// @@todo(guy): strip everything besides body tags
 	ui.Client.RenderDOM(string(pathContent))
-
-	bridge := ui.Client.RegisterEventBridge()
-	terminationErrChan := make(chan error)
-
-	go func() {
-		for {
-			select {
-			case s := <-bridge.EventListenerSignal:
-				go ui.events[s.ElementID][s.EventName](s.Document)
-			case err := <-bridge.EventErrorSignal:
-				terminationErrChan <- err
-			}
-
-		}
-	}()
 
 	terminationErr := <-terminationErrChan
 	if errors.Is(terminationErr, ErrHostConnectionTerminated) {
