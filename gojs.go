@@ -64,6 +64,10 @@ func New(client UIClient, config *UIConfig) *UI {
 func (ui *UI) Show() {
 	ui.Client.Setup()
 	pathContent, err := ioutil.ReadFile(ui.Config.HTMLDocPath)
+
+	// @@todo(guy): strip everything besides body tags
+	ui.Client.RenderDOM(string(pathContent))
+
 	if err != nil {
 		panic("invalid doc path")
 	}
@@ -86,7 +90,7 @@ func (ui *UI) Show() {
 	connectionEstablished := make(chan bool)
 	go func() {
 		for {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Millisecond * 50)
 			if ui.Client.IsActiveConnection() {
 				connectionEstablished <- true
 				break
@@ -96,9 +100,6 @@ func (ui *UI) Show() {
 
 	// we wait for the connection to be established before attempting to render anything.
 	<-connectionEstablished
-
-	// @@todo(guy): strip everything besides body tags
-	ui.Client.RenderDOM(string(pathContent))
 
 	terminationErr := <-terminationErrChan
 	if errors.Is(terminationErr, ErrHostConnectionTerminated) {
