@@ -1,7 +1,9 @@
 package gojs
 
 import (
+	"errors"
 	"io/ioutil"
+	"time"
 )
 
 type StaticDocument struct {
@@ -16,8 +18,11 @@ type EventListenerEvent struct {
 	Document  *StaticDocument `json:"document"`
 }
 
+var ErrHostConnectionTerminated = errors.New("host connection terminated")
+
 type UIUpdate struct {
 	EventListenerSignal chan EventListenerEvent
+	EventErrorSignal    chan error
 }
 
 type UIClient interface {
@@ -26,6 +31,7 @@ type UIClient interface {
 	RenderDOM(body string)
 	RegisterEventBridge() *UIUpdate
 	Setup()
+	IsActiveConnection() bool
 }
 
 type StaticDOMElement interface {
@@ -62,23 +68,42 @@ func (ui *UI) Show() {
 		panic("invalid doc path")
 	}
 
+	// ensure that the connection exists before we do stuff.
+	connectionEstablished := make(chan bool)
+	go func() {
+		for {
+			time.Sleep(time.Second * 5)
+			if ui.Client.IsActiveConnection() {
+				connectionEstablished <- true
+				break
+			}
+		}
+	}()
+
+	<-connectionEstablished
+
 	// @@todo(guy): strip everything besides body tags
 	ui.Client.RenderDOM(string(pathContent))
 
 	bridge := ui.Client.RegisterEventBridge()
-	finished := make(chan bool)
+	terminationErrChan := make(chan error)
 
 	go func() {
 		for {
 			select {
 			case s := <-bridge.EventListenerSignal:
 				go ui.events[s.ElementID][s.EventName](s.Document)
+			case err := <-bridge.EventErrorSignal:
+				terminationErrChan <- err
 			}
+
 		}
-		// @@ todo(guy): this goes on forever, need to close it..
 	}()
 
-	<-finished
+	terminationErr := <-terminationErrChan
+	if errors.Is(terminationErr, ErrHostConnectionTerminated) {
+		// @@todo(guy): reset?
+	}
 }
 
 type StaticDOMElementInstance struct {

@@ -25,12 +25,10 @@ func (s *DevServer) RegisterEvent(id string, eventName string) {
 
 	if s.started {
 		s.wsServer.Emit("register_event", f)
-		fmt.Println("made it here55?")
 		return
 	}
 
 	ops := append(*s.operations, func(c *websocket.Conn) {
-		fmt.Println("made it here?")
 		s.wsServer.Emit("register_event", f)
 	})
 
@@ -57,7 +55,6 @@ func (s *DevServer) SetElement(elementID string, data string) {
 }
 func (s *DevServer) Setup() {
 	s.wsServer.OnConnect(func(c *websocket.Conn) {
-		fmt.Println(len(*s.operations))
 		for _, op := range *s.operations {
 			op(c)
 		}
@@ -92,6 +89,10 @@ func (s *DevServer) RegisterEventBridge() *UIUpdate {
 	return &UIUpdate{
 		EventListenerSignal: elChan,
 	}
+}
+
+func (s *DevServer) IsActiveConnection() bool {
+	return true
 }
 
 func NewDevServer(serverPort int) UIClient {
