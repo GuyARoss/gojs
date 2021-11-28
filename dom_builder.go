@@ -34,20 +34,24 @@ func (b *DOMBuilder) Build() string {
 							case "register_event": {
 								const { id, eventName } = JSON.parse(data)
 
-								document.getElementById(id).addEventListener(eventName, () => {
-									const staticDoc = createStaticDoc()
-									
-									socket.send(JSON.stringify({
-										name: "event",
-										data: {
-											document: {
-												contentMap: staticDoc,
+								const f = document.getElementById(id)
+								if (f !== null) {
+									f.addEventListener(eventName, () => {
+										const staticDoc = createStaticDoc()
+										
+										socket.send(JSON.stringify({
+											name: "event",
+											data: {
+												document: {
+													contentMap: staticDoc,
+												},
+												eventName: eventName,
+												elementID: id,
 											},
-											eventName: eventName,
-											elementID: id,
-										},
-									}))
-								})
+										}))
+									})
+								}						
+
 								break;
 							}
 							case "set_element": {
@@ -55,9 +59,11 @@ func (b *DOMBuilder) Build() string {
 
 								// sets the inner html of an element
 								const element = document.getElementById(elementID)
-								element.innerHTML = content
-								break;
+								if (element !== null) {
+									element.innerHTML = content
+								}
 
+								break;
 							}
 							case "render_dom": {
 								document.body.innerHTML = data
