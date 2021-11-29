@@ -1,0 +1,22 @@
+name: publish dom builder
+
+on:
+  push:
+    branches:
+    - wftest
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: dom builder script
+      run: python scripts/generated_dom_builder.py
+
+    - name: push
+      uses: actions-x/commit@v2
+      with:
+        message: automatically generated dom builder file
+        force: true
