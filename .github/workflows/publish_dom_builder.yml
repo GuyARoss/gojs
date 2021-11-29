@@ -1,9 +1,6 @@
 name: Publish DOMBuilder Go Module
 
-on:
-  push:
-    branches:
-    - wftest
+on: push
 
 jobs:
   build:
