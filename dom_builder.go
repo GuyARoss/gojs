@@ -13,73 +13,78 @@ func (b *DOMBuilder) Build() string {
 				<script>
 					const socket = new WebSocket("%s")
 
-					function createStaticDoc() {
-						const uiElements = document.getElementsByClassName("ui")
-						const uiDoc = {}
+                    function createStaticDoc() {
+    const uiElements = document.getElementsByClassName("ui")
+    const uiDoc = {}
 
-						for (let i = 0; i < uiElements.length; i++) {
-							const uiElement = uiElements.item(i)
-							const uiElementID = uiElement.id
+    for (let i = 0; i < uiElements.length; i++) {
+        const uiElement = uiElements.item(i)
+        const uiElementID = uiElement.id
 
-							if (!!uiElementID) {
-								uiDoc[uiElementID] = uiElement.innerText
-							}
-						}
-						
-						return uiDoc
-					}
+        if (!!uiElementID) {
+            uiDoc[uiElementID] = uiElement.innerText
+        }
+    }
 
-					const handleIncomingRequest = ({ name, data }) => {
-						switch (name) {
-							case "register_event": {
-								const { id, eventName } = JSON.parse(data)
+    return uiDoc
+}
 
-								const f = document.getElementById(id)
-								if (f !== null) {
-									f.addEventListener(eventName, () => {
-										const staticDoc = createStaticDoc()
-										
-										socket.send(JSON.stringify({
-											name: "event",
-											data: {
-												document: {
-													contentMap: staticDoc,
-												},
-												eventName: eventName,
-												elementID: id,
-											},
-										}))
-									})
-								}						
+function handleIncomingRequest (socket, { name, data }) {
+    switch (name) {
+        case "register_event": {
+            const { id, eventName } = JSON.parse(data)
 
-								break;
-							}
-							case "set_element": {
-								const { elementID, content } = JSON.parse(data)
+            const f = document.getElementById(id)
+            if (f !== null) {
+                f.addEventListener(eventName, () => {
+                    const staticDoc = createStaticDoc()
 
-								// sets the inner html of an element
-								const element = document.getElementById(elementID)
-								if (element !== null) {
-									element.innerHTML = content
-								}
+                    socket.send(JSON.stringify({
+                        name: "event",
+                        data: {
+                            document: {
+                                contentMap: staticDoc,
+                            },
+                            eventName: eventName,
+                            elementID: id,
+                        },
+                    }))
+                })
+            }
 
-								break;
-							}
-							case "render_dom": {
-								document.body.innerHTML = data
-								break;
+            break;
+        }
+        case "set_element": {
+            const { elementID, content } = JSON.parse(data)
 
-							}
-						}
-					}
+            // sets the inner html of an element
+            const element = document.getElementById(elementID)
+            if (element !== null) {
+                element.innerHTML = content
+            }
 
-					socket.addEventListener("message", (e) => {
-						const incoming = JSON.parse(e.data)
-			
-						if (!!incoming.data) {
-							handleIncomingRequest(incoming)
-						}
-					})
+            break;
+        }
+        case "render_dom": {
+            document.body.innerHTML = data
+            break;
+
+        }
+    }
+}
+
+function initializeSocket (socket) {
+    socket.addEventListener("message", (e) => {
+        const incoming = JSON.parse(e.data)
+    
+        if (!!incoming.data) {
+            handleIncomingRequest(socket, incoming)
+        }
+    })
+}
+
+
+                    initializeSocket(socket)
 				</script>
 			</head>
 			<body>
