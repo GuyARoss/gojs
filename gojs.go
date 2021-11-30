@@ -41,7 +41,8 @@ type StaticDOMElement interface {
 type EventHandler func(doc *StaticDocument)
 
 type UIConfig struct {
-	HTMLDocPath string
+	HTMLDocPath  string
+	HTMLHeadTags []string
 }
 
 type UI struct {

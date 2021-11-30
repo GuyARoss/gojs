@@ -56,7 +56,7 @@ func (c *IPCClient) Write(operationName string, data string) error {
 		return err
 	}
 
-	// note to future dev, DO NOT remove the \n.. this caused hours of headache..
+	// note to future human: DO NOT remove the \n.. this caused hours of headache..
 	f.WriteString(fmt.Sprintf("%s:%s\n", operationName, normalizeDataOut(data)))
 
 	return nil

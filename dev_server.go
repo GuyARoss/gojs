@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pkgz/websocket"
 )
@@ -100,17 +101,45 @@ func NewDevServer(serverPort int) UIClient {
 	ops := make([]func(c *websocket.Conn), 0)
 
 	http.HandleFunc("/ws", wsServer.Handler)
+	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		dom := &DOMBuilder{
+			SocketURI: fmt.Sprintf("ws://localhost:%d/ws", serverPort),
+		}
+		rw.Write([]byte(dom.Build()))
+		rw.WriteHeader(http.StatusOK)
+	})
 
 	go func() {
-		http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
-			dom := &DOMBuilder{
-				SocketURI: fmt.Sprintf("ws://localhost:%d/ws", serverPort),
-			}
-			rw.Write([]byte(dom.Build()))
-			rw.WriteHeader(http.StatusOK)
-		})
-
 		http.ListenAndServe(fmt.Sprintf(":%d", serverPort), nil)
+	}()
+
+	return &DevServer{
+		wsServer:   wsServer,
+		operations: &ops,
+	}
+}
+
+type DevServerConfig struct {
+	ServerPort   int
+	HTMLHeadTags []string
+}
+
+func NewConfigurableDevServer(cfg *DevServerConfig) UIClient {
+	wsServer := websocket.Start(context.Background())
+	ops := make([]func(c *websocket.Conn), 0)
+
+	http.HandleFunc("/ws", wsServer.Handler)
+	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		dom := &DOMBuilder{
+			SocketURI:    fmt.Sprintf("ws://localhost:%d/ws", cfg.ServerPort),
+			HTMLHeadTags: strings.Join(cfg.HTMLHeadTags, " "),
+		}
+		rw.Write([]byte(dom.Build()))
+		rw.WriteHeader(http.StatusOK)
+	})
+
+	go func() {
+		http.ListenAndServe(fmt.Sprintf(":%d", cfg.ServerPort), nil)
 	}()
 
 	return &DevServer{

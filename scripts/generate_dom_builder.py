@@ -1,5 +1,5 @@
 
-def main():    
+def main():
     socket_funcs_file = open('dom_builder/socket_parse.js', 'r')
     socket_funs = socket_funcs_file.read()
 
@@ -13,12 +13,15 @@ def main():
 
     type DOMBuilder struct [|
         SocketURI string
+        HTMLHeadTags string
     |]
 
     func (b *DOMBuilder) Build() string [|
         return fmt.Sprintf(`
             <html>			
                 <head>
+                    %s
+
                     <script>
                         const socket = new WebSocket("%s")
 
@@ -30,7 +33,7 @@ def main():
                 <body>
                 </body>
             </html>
-        `, b.SocketURI)
+        `, b.HTMLHeadTags, b.SocketURI)
     |]
     '''
 
